@@ -1,8 +1,8 @@
-# MemLab：多层 Agent 记忆实验组件
+# MemLab / Agent 多层记忆与实验控制
 
-这个子工程保留多层记忆管理、上下文组装、运行记录和实验有效性检查的实现。代码可用于阅读架构、运行离线单元测试，以及自行配置 Redis / Postgres / Qdrant / DeerFlow 后开展实验。
+面向并行 Agent 会话，将近期上下文、热缓存、持久化元数据与向量检索组织为统一记忆接口。提供上下文预算与去重、分层放置、异步会话记录和实验有效性检查。
 
-公开版本不包含论文数据、真实对话、实验输出或模型凭据。这里没有可据以比较算法优劣的性能结果，也不声称已复现论文结果。
+[架构](docs/ARCHITECTURE.md) · [核心记忆策略](memlab/memory_manager/manager.py) · [实验控制](memlab/pipeline/control_plane.py) · [设计取舍](../../docs/ENGINEERING_NOTES.md) · [离线测试](docs/TESTING.md)
 
 ## 可以从代码中查看的能力
 
@@ -28,6 +28,8 @@ python -m pytest -q
 建议阅读 [记忆管理器](memlab/memory_manager/manager.py)、[运行控制](memlab/pipeline/control_plane.py)、[上下文组装](memlab/memory_manager/l0.py)，再看相应 [单元测试](tests/)。[架构说明](docs/ARCHITECTURE.md) 描述各层职责；[环境配置](docs/SETUP.md) 给出外部服务的接入方式。
 
 ## 上游与公开范围
+
+公开版本提供源码、配置和离线测试；真实对话、论文数据、实验输出与模型凭据保留在本地。性能比较需另行配置服务与数据并完成实验，具体状态见[测试边界](docs/TESTING.md)。
 
 DeerFlow 来自 [ByteDance / deer-flow](https://github.com/bytedance/deer-flow)，本项目的适配参考固定版本 `7de94394d4295182701ffb47e938e7c39b963091`。公开版没有复制该上游源码，外部 checkout 和依赖需要自行准备。适配代码不代表对该上游项目的全部实现负责。
 
