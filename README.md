@@ -1,58 +1,28 @@
-# Research Code Collection
+# Research Project Index
 
-**Agent 多层记忆与中文文本分类实验工程。** 两个独立 Python 子项目，覆盖上下文组装、异步会话、实验有效性检查、分类基线与服务批处理。
+公开研究工程的导航与设计笔记。每个项目在各自独立仓库维护源码、安装说明、测试和来源；本仓库只维护索引与跨项目工程说明。
 
-[![Code and publication checks](https://github.com/Darssal/Research-Code-Collection/actions/workflows/checks.yml/badge.svg)](https://github.com/Darssal/Research-Code-Collection/actions/workflows/checks.yml)
+[![Index and publication checks](https://github.com/Darssal/Research-Code-Collection/actions/workflows/checks.yml/badge.svg)](https://github.com/Darssal/Research-Code-Collection/actions/workflows/checks.yml)
 
-[MemLab](#memlab--agent-多层记忆) · [文本分类](#招聘文本三分类) · [工程笔记](docs/ENGINEERING_NOTES.md) · [验证与来源](#验证与来源)
+## Canonical Repositories
 
-## MemLab / Agent 多层记忆
-
-面向并行会话，分离近期上下文、热缓存、持久化元数据与向量检索，提供统一记忆接口和实验控制组件。
-
-| 技术问题 | 实现机制 | 入口 |
+| Project | 实现与当前范围 | 入口 |
 | --- | --- | --- |
-| 记忆如何放置与取回 | L0–L3 分层、重要度准入、大对象指针、异步批量写入 | [记忆管理器](projects/memlab/memlab/memory_manager/manager.py) |
-| 检索内容如何进入上下文 | 相关性筛选、版本与文本去重、注入预算、直接证据绕过 | [上下文策略](projects/memlab/memlab/memory_manager/l0.py) |
-| 并发会话如何保留归属 | ContextVar 隔离日志上下文，记录缓存与降级路径 | [会话日志](projects/memlab/memlab/session_logging.py) |
-| 哪些运行可进入汇总 | 有效性条件、失效阶段回滚和重跑计划 | [实验控制](projects/memlab/memlab/pipeline/control_plane.py) |
+| **FracLogGPT-Lite** | 成像测井裂缝解释的多模态实验流程：LoRA-SFT、DPO / SimPO、可恢复推理和视觉对比解码。公开 4B 实验工程与论文 Qwen2.5-VL 7B 设置分别说明。 | [Repository](https://github.com/Darssal/FracLogGPT-Lite) · [Quickstart](https://github.com/Darssal/FracLogGPT-Lite/blob/main/docs/QUICKSTART.md) |
+| **MemLab** | Agent L0–L3 多层记忆、上下文注入、异步会话归属与运行有效性检查。离线测试与真实基础设施 / 模型实验分开验证。 | [Repository](https://github.com/Darssal/MemLab) · [Architecture](https://github.com/Darssal/MemLab/blob/main/docs/ARCHITECTURE.md) · [Testing](https://github.com/Darssal/MemLab/blob/main/docs/TESTING.md) |
+| **Recruitment Text Classification** | 中文招聘文本三分类：TF-IDF / 随机森林、可选 BERT 与有界 HTTP 适配。24 条虚构样例用于流程验证；未实现论文完整 RAG 链路。 | [Repository](https://github.com/Darssal/Recruitment-Text-Classification) · [Engineering Notes](https://github.com/Darssal/Recruitment-Text-Classification/blob/main/docs/ENGINEERING_NOTES.md) |
+| **JSP UI Prototype** | 早期 JSP 界面和参考登录动画的独立存档。保留 13 个页面与 CodePen 来源；业务页多为占位，没有认证、数据库或 Java 业务后端。 | [Repository](https://github.com/Darssal/JSP-UI-Prototype) · [Scope and Provenance](https://github.com/Darssal/JSP-UI-Prototype/blob/main/docs/LEGACY_JSP.md) |
 
-`Python 3.12` · `asyncio` · `Redis` · `PostgreSQL` · `Qdrant`
+## Engineering Notes
 
-[项目与安装](projects/memlab/) · [架构](projects/memlab/docs/ARCHITECTURE.md) · [53 项离线测试的覆盖范围](projects/memlab/docs/TESTING.md)
+[工程实现与设计取舍](docs/ENGINEERING_NOTES.md)连接问题、机制、小例子和验证入口，覆盖阶段恢复、同步解码、上下文预算、会话隔离、分类划分与批处理失败。所有源码链接指向对应独立仓库。
 
-## 招聘文本三分类
+安装、运行和贡献代码请进入项目仓库。各工程的单元测试检查代码行为；合成样例、离线检查或原型完整性检查均不能替代论文效果复现、真实服务集成或后端功能验证。
 
-识别环保、人工智能与其它招聘文本（其它在接口中使用标签 `否`），提供本地基线、可选 BERT 和外部聊天服务适配器。
+## Migration and Maintenance
 
-- **数据与评测**：CSV / JSONL 接口、固定种子分层划分、重复文本检查；先划分再拟合 TF-IDF，按实际类别顺序对齐概率与指标。
-- **服务批处理**：超时、有界重试、非临时错误快速结束、并发保序；默认预测产物只保留 ID、标签与错误状态。
-- **可运行示例**：24 条新编写的合成文本，CPU 执行本地随机森林流程，16 项回归测试覆盖核心行为。
+2026-10-19，MemLab 与分类工程从已经公开去敏的 Collection 提交 `8f143f67598f88fbb8a16d599a7f3d17c623d281` 建立独立维护入口。本仓库当前分支移除两份项目源码；原有文件仍可在 [Git 历史](https://github.com/Darssal/Research-Code-Collection/tree/8f143f67598f88fbb8a16d599a7f3d17c623d281/projects) 中追溯。后续改动只提交到独立仓库，历史快照不作为第二份维护入口。
 
-```bash
-cd projects/job-text-classification
-python -m pip install -e .
-python -m job_text_classification demo
-```
+JSP 原型从个人主页已公开的 Git blobs 迁移，来源记录保留在其独立仓库。FracLogGPT-Lite 已单独维护，本次未复制或重命名。
 
-`Python` · `scikit-learn` · `TF-IDF` · `Random Forest` · `ThreadPoolExecutor`
-
-[数据接口与运行](projects/job-text-classification/) · [分类实现](projects/job-text-classification/src/job_text_classification/baseline.py) · [服务适配](projects/job-text-classification/src/job_text_classification/http_adapter.py) · [回归测试](projects/job-text-classification/tests/test_regressions.py)
-
-## 相关项目 / FracLogGPT-Lite
-
-[FracLogGPT-Lite](https://github.com/Darssal/FracLogGPT-Lite) 在独立仓库维护成像测井裂缝解释的多模态实验流程：LoRA-SFT、DPO / SimPO、可恢复推理与视觉对比解码。
-
-[项目介绍](https://github.com/Darssal/FracLogGPT-Lite) · [无 GPU 验证](https://github.com/Darssal/FracLogGPT-Lite/blob/main/docs/QUICKSTART.md) · [双分支解码](https://github.com/Darssal/FracLogGPT-Lite/blob/main/src/fraclog/vcd.py)
-
-## 设计与验证
-
-[工程笔记](docs/ENGINEERING_NOTES.md)连接问题、机制、小例子和测试，涵盖推理恢复、上下文与会话隔离、分类评测与失败处理。
-
-每个子项目独立安装。分类 demo 与 MemLab 单元测试可离线运行；MemLab stub / E2E 需要另行配置基础设施。持续集成检查分类、记忆组件及公开文件边界，详见 [Actions](https://github.com/Darssal/Research-Code-Collection/actions/workflows/checks.yml)。
-
-## 验证与来源
-
-2026-10-18 验证记录：分类 16 项、MemLab 53 项离线测试通过。合成示例用于检查流程；BERT 训练、真实 HTTP 服务、数据库与 DeerFlow 集成、论文性能实验尚未在公开版整理中运行。
-
-源码、配置、测试与合成示例可以公开；真实语料、论文材料、权重、运行输出和凭据保留在本地。第三方框架与模型的来源见 [THIRD_PARTY.md](THIRD_PARTY.md)，提交规则见 [CONTRIBUTING.md](CONTRIBUTING.md) 与[公开范围](docs/PUBLICATION_SCOPE.md)。
+本仓库 CI 检查索引结构、文档链接、公开文件边界及实际 Git index，不安装或执行其他项目。源码和真实数据不迁回本索引。[贡献规则](CONTRIBUTING.md)、[公开范围](docs/PUBLICATION_SCOPE.md)与[来源说明](THIRD_PARTY.md)约束后续维护。

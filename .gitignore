@@ -58,10 +58,6 @@ temp/
 *.rar
 *.7z
 
-# Downloaded benchmark content must stay local, including older CLI paths
-projects/memlab/benchmarks/public_main/longmemeval/*.json
-projects/memlab/benchmarks/public_main/longmemeval/*.jsonl
-
 # Operating system
 Thumbs.db
 .DS_Store

@@ -1,25 +1,23 @@
 # 贡献与维护
 
-每次修改针对一个项目和一个明确的问题。先阅读该项目 README，再运行它提供的合成示例和离线测试。
+本仓库维护项目导航、跨项目设计笔记、来源和公开检查工具。实现、依赖、样例和项目测试的修改应提交到 README 对应的独立仓库；本索引不接受第二份项目源码。
 
 ## 提交前
 
-逐个选择本次修改的文件并加入 Git 暂存区，再检查将要提交的内容：
+1. 核对链接指向项目当前维护入口；历史链接须明确标注为追溯用途。
+2. 明确选择本次改动的文件并暂存，检查 `git diff --cached` 和文件清单。
+3. 执行以下检查。报告写到仓库外；默认全目录检查适用于无缓存、无本地环境的干净快照。
 
 ```bash
-python tools/check_publication.py --staged
-python -m unittest discover -s tests -v
-git diff --check
-git diff --cached --stat
-git diff --cached
+python -B tools/check_index.py
+python -B -m unittest discover -s tests -v
+python -B tools/check_publication.py
+python -B tools/check_publication.py --staged
+git diff --cached --check
 ```
 
-`--staged` 检查暂存区的实际文件内容，本地未暂存的环境、缓存和运行输出不影响结果。无参数模式严格检查整个工作目录，适合首次发布或检查干净的代码快照；若目录中有本地虚拟环境或缓存，它们会按规则报错。
-
-使用子项目 README 中的命令运行相关测试。需要数据、GPU、在线模型或外部服务的检查应单独记录，不能用离线单元测试通过代替真实实验成功。
+`python -B tools/check_index.py --remote` 另用已安装的 GitHub CLI 只读核对独立仓库的默认分支和链接文件。CI 以只读 token 执行此检查，不需要扩大账号权限。
 
 ## 变更说明
 
-Pull Request 应写清触发问题、修改后的行为、实际运行的检查和未验证的依赖。模型效果数字需要对应数据划分、运行配置和可审查的结果来源；没有这些依据时，只描述代码实现与已运行的验证。
-
-外部依赖保留原项目名称与来源。新增第三方代码前检查其许可证和署名要求。本仓库未统一授予开源许可证，不能把依赖项目的许可证推定为本仓库全部代码的许可证。
+Pull Request 写清链接或说明的问题、改后的阅读入口及实际检查结果。模型效果需要对应实验依据，不能把单元测试数量或合成例子的指标写成研究结论。保留外部框架、模型与参考实现来源，不将上游许可证推定为本仓库的统一许可证。
