@@ -22,7 +22,9 @@ assert SPEC and SPEC.loader
 CHECKER = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = CHECKER
 SPEC.loader.exec_module(CHECKER)
-POLICY = CHECKER.load_policy(ROOT / "publication-policy.json")
+DEPLOYED_POLICY = CHECKER.load_policy(ROOT / "publication-policy.json")
+# Authored safety fixtures exercise generic rules independently of the deployed index inventory.
+POLICY = dict(DEPLOYED_POLICY, approved_top_level_directories=["tools", "tests", "docs", ".github", "src", "examples", "configs"])
 
 
 class PublicationPolicyTest(unittest.TestCase):
@@ -34,6 +36,17 @@ class PublicationPolicyTest(unittest.TestCase):
 
     def scan(self, root: Path):
         return CHECKER.scan_repository(root, POLICY)
+
+    def test_deployed_index_policy_rejects_project_source(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_file(root, "projects/example/source.py")
+            self.make_file(root, "src/example.py")
+            self.make_file(root, "pyproject.toml")
+            findings = CHECKER.scan_repository(root, DEPLOYED_POLICY).findings
+            self.assertIn(CHECKER.Finding("projects", "DIRECTORY_NOT_ALLOWLISTED"), findings)
+            self.assertIn(CHECKER.Finding("src", "DIRECTORY_NOT_ALLOWLISTED"), findings)
+            self.assertIn(CHECKER.Finding("pyproject.toml", "PATH_NOT_ALLOWLISTED"), findings)
 
     def test_secret_report_contains_no_secret_text(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -56,9 +69,9 @@ class PublicationPolicyTest(unittest.TestCase):
     def test_private_data_and_manuscript_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            self.make_file(root, "projects/memlab/data/observations.csv", "x,y\n1,2\n")
-            self.make_file(root, "projects/memlab/docs/manuscript.pdf", "authored binary placeholder")
-            self.make_file(root, "projects/memlab/src/observations.csv", "x,y\n1,2\n")
+            self.make_file(root, "data/observations.csv", "x,y\n1,2\n")
+            self.make_file(root, "docs/manuscript.pdf", "authored binary placeholder")
+            self.make_file(root, "src/observations.csv", "x,y\n1,2\n")
             rules = {finding.rule for finding in self.scan(root).findings}
             self.assertIn("FORBIDDEN_DIRECTORY", rules)
             self.assertIn("FORBIDDEN_FILE_TYPE", rules)
@@ -67,10 +80,10 @@ class PublicationPolicyTest(unittest.TestCase):
     def test_small_synthetic_examples_and_fixtures_allowed(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            self.make_file(root, "projects/job-text-classification/examples/synthetic_jobs.csv", "category,text\nA,authored sample\n")
-            self.make_file(root, "projects/job-text-classification/src/job_text_classification/examples/synthetic_jobs.jsonl", '{"label": "A", "text": "authored sample"}\n')
-            self.make_file(root, "projects/memlab/tests/fixtures/tiny.json", '{"sample": [1, 2]}\n')
-            self.make_file(root, "projects/memlab/configs/demo.json", '{"iterations": 2}\n')
+            self.make_file(root, "examples/synthetic_jobs.csv", "category,text\nA,authored sample\n")
+            self.make_file(root, "src/job_text_classification/examples/synthetic_jobs.jsonl", '{"label": "A", "text": "authored sample"}\n')
+            self.make_file(root, "tests/fixtures/tiny.json", '{"sample": [1, 2]}\n')
+            self.make_file(root, "configs/demo.json", '{"iterations": 2}\n')
             self.assertEqual(self.scan(root).findings, [])
 
     def test_symlink_is_rejected_without_following_target(self):
@@ -98,8 +111,8 @@ class PublicationPolicyTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.make_file(root, ".git/config", "metadata outside content scan")
-            self.make_file(root, "projects/memlab/.git", "gitdir: ../elsewhere")
-            self.assertEqual(self.scan(root).findings, [CHECKER.Finding("projects/memlab/.git", "NESTED_GIT")])
+            self.make_file(root, "docs/.git", "gitdir: ../elsewhere")
+            self.assertEqual(self.scan(root).findings, [CHECKER.Finding("docs/.git", "NESTED_GIT")])
 
     def test_private_identifiers_detected_without_number_false_positives(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -170,8 +183,8 @@ class StagedPublicationPolicyTest(unittest.TestCase):
             self.initialize(root)
             self.make_file(root, ".gitignore", ".venv/\n__pycache__/\n*.egg-info/\n")
             self.make_file(root, ".venv/ignored.py")
-            self.make_file(root, "projects/memlab/memlab/__pycache__/ignored.pyc")
-            self.make_file(root, "projects/memlab/memlab.egg-info/PKG-INFO")
+            self.make_file(root, "memlab/__pycache__/ignored.pyc")
+            self.make_file(root, "memlab.egg-info/PKG-INFO")
             self.git(root, "add", "-A")
             self.assertEqual(CHECKER.scan_staged(root).findings, [])
             self.assertTrue(CHECKER.scan_repository(root, POLICY).findings)
@@ -182,10 +195,10 @@ class StagedPublicationPolicyTest(unittest.TestCase):
             self.initialize(root)
             identifier = self.git(root, "hash-object", "-w", "--stdin", payload=b"outside-target").decode().strip()
             self.git(root, "update-index", "--add", "--cacheinfo", f"120000,{identifier},README.md")
-            self.git(root, "update-index", "--add", "--cacheinfo", f"160000,{identifier},projects/memlab/external")
+            self.git(root, "update-index", "--add", "--cacheinfo", f"160000,{identifier},external")
             findings = CHECKER.scan_staged(root).findings
             self.assertIn(CHECKER.Finding("README.md", "SYMLINK_INDEX_ENTRY"), findings)
-            self.assertIn(CHECKER.Finding("projects/memlab/external", "SUBMODULE_INDEX_ENTRY"), findings)
+            self.assertIn(CHECKER.Finding("external", "SUBMODULE_INDEX_ENTRY"), findings)
 
     def test_unmerged_index_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -213,12 +226,12 @@ class StagedPublicationPolicyTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.initialize(root)
-            self.make_file(root, "projects/memlab/data/observations.csv", "x,y\n1,2\n")
-            self.git(root, "add", "projects/memlab/data/observations.csv")
+            self.make_file(root, "data/observations.csv", "x,y\n1,2\n")
+            self.git(root, "add", "data/observations.csv")
             changed = dict(POLICY, forbidden_directory_names=[])
             self.make_file(root, "publication-policy.json", json.dumps(changed))
             self.assertIn(
-                CHECKER.Finding("projects/memlab/data", "FORBIDDEN_DIRECTORY"),
+                CHECKER.Finding("data", "FORBIDDEN_DIRECTORY"),
                 CHECKER.scan_staged(root).findings,
             )
 
@@ -226,7 +239,7 @@ class StagedPublicationPolicyTest(unittest.TestCase):
         for name in ("../README.md", "/README.md", "D:" + "/private.py", "a\\b.py", "a/../b.py", "a/./b.py", "a//b.py", "CON.py", "a/name. "):
             with self.subTest(name=name):
                 self.assertFalse(CHECKER._safe_index_path(name))
-        self.assertTrue(CHECKER._safe_index_path("projects/memlab/memlab/config.py"))
+        self.assertTrue(CHECKER._safe_index_path("tools/check.py"))
 
     def test_case_collisions_cannot_hide_a_staged_blob(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -234,8 +247,8 @@ class StagedPublicationPolicyTest(unittest.TestCase):
             self.initialize(root)
             first = self.git(root, "hash-object", "-w", "--stdin", payload=b"# first authored blob\n").decode().strip()
             second = self.git(root, "hash-object", "-w", "--stdin", payload=b"# second authored blob\n").decode().strip()
-            upper = "projects/memlab/memlab/A.py"
-            lower = "projects/memlab/memlab/a.py"
+            upper = "tools/A.py"
+            lower = "tools/a.py"
             self.git(root, "-c", "core.ignorecase=false", "update-index", "--add", "--cacheinfo", f"100644,{first},{upper}")
             self.git(root, "-c", "core.ignorecase=false", "update-index", "--add", "--cacheinfo", f"100644,{second},{lower}")
             findings = CHECKER.scan_staged(root).findings
